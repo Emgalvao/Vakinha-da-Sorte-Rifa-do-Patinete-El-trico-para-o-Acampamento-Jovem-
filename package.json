@@ -1,0 +1,10 @@
+{
+  "dependencies": {
+    "body-parser": "^2.4.0",
+    "cors": "^2.8.6",
+    "dotenv": "^18.0.9",
+    "express": "^5.3.0",
+    "firebase-admin": "^14.5.0",
+    "gn-api-sdk-node": "^3.0.4"
+  }
+}

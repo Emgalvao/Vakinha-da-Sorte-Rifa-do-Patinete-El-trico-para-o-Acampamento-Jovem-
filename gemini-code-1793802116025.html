@@ -1,0 +1,1045 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Vakinha da Sorte | Acampamento Jovem 2027</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Montserrat:wght@800;900&display=swap" rel="stylesheet">
+    <!-- QRCode JS Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+    <!-- SheetJS (Para Exportação Excel) -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.min.js"></script>
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        pix: { DEFAULT: '#32BCAD', dark: '#24887d', light: '#42e2cf' },
+                        accent: { green: '#00FF66', yellow: '#FFE600' },
+                        dark: { bg: '#0A0E17', card: '#131A29', border: '#1F293D', hover: '#1A2338' }
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], display: ['Montserrat', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+    <style>
+        body { background-color: #0A0E17; color: #F3F4F6; font-family: 'Inter', sans-serif; -webkit-tap-highlight-color: transparent; }
+        .glow-green { box-shadow: 0 0 25px rgba(0, 255, 102, 0.25); }
+        .glow-pix { box-shadow: 0 0 20px rgba(50, 188, 173, 0.3); }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #131A29; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #1F293D; border-radius: 8px; }
+        
+        .number-btn { transition: transform 0.1s ease; user-select: none; }
+        .number-btn.selected { background-color: #00FF66 !important; color: #0A0E17 !important; font-weight: 800; border-color: #00FF66 !important; transform: scale(1.05); }
+        .number-btn.reserved { background-color: rgba(234, 179, 8, 0.2) !important; border-color: rgba(234, 179, 8, 0.5) !important; color: #fde047 !important; cursor: not-allowed !important; }
+        .number-btn.paid { background-color: rgba(220, 38, 38, 0.3) !important; border-color: rgba(220, 38, 38, 0.6) !important; color: #f87171 !important; cursor: not-allowed !important; text-decoration: line-through; }
+        
+        .range-btn { transition: all 0.2s ease; }
+        .range-btn.active { background-color: #32BCAD !important; color: #0A0E17 !important; border-color: #32BCAD !important; font-weight: 800; }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between antialiased">
+
+    <!-- CABEÇALHO -->
+    <header class="bg-dark-card border-b border-dark-border sticky top-0 z-40 backdrop-blur-md bg-opacity-90">
+        <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pix to-accent-green flex items-center justify-center text-dark-bg font-black text-xl shadow-lg">
+                    <i class="fa-solid fa-hands-holding-child"></i>
+                </div>
+                <div>
+                    <h1 class="font-display font-black text-lg md:text-xl tracking-tight text-white leading-none">
+                        VAKINHA<span class="text-accent-green">DA SORTE</span>
+                    </h1>
+                    <p class="text-xs text-gray-400">Acampamento Jovem 2027</p>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2">
+                <a href="https://wa.me/5581984810046?text=Olá!%20Preciso%20de%20suporte%20com%20minha%20doação/reserva%20na%20Vakinha%20da%20Sorte." target="_blank" class="text-emerald-400 hover:text-emerald-300 text-xs flex items-center gap-1 bg-emerald-950/60 border border-emerald-500/40 px-2.5 py-1.5 rounded-lg font-semibold">
+                    <i class="fa-brands fa-whatsapp text-sm"></i> Suporte
+                </a>
+                <button onclick="openRulesModal()" class="text-gray-300 hover:text-white text-xs flex items-center gap-1 bg-dark-bg px-2.5 py-1.5 rounded-lg border border-dark-border">
+                    <i class="fa-solid fa-file-contract"></i> Regulamento
+                </button>
+                <button onclick="openAdminModal()" class="text-gray-400 hover:text-pix text-xs flex items-center gap-1 bg-dark-bg px-2.5 py-1.5 rounded-lg border border-dark-border">
+                    <i class="fa-solid fa-user-shield"></i> Admin
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- BARRA DE PROGRESSO EM TEMPO REAL -->
+    <section class="bg-dark-card border-b border-dark-border py-4 px-4">
+        <div class="max-w-6xl mx-auto space-y-2">
+            <div class="flex justify-between items-center text-xs font-bold">
+                <span class="text-gray-300 flex items-center gap-1.5"><i class="fa-solid fa-chart-line text-pix"></i> Meta de Arrecadação:</span>
+                <span id="progress-text-detail" class="text-accent-green">0% vendido (0 de 10.000 cotas)</span>
+            </div>
+            <div class="w-full bg-dark-bg h-4 rounded-full overflow-hidden border border-dark-border p-0.5 relative">
+                <div id="progress-bar-fill" class="bg-gradient-to-r from-pix via-accent-green to-accent-yellow h-full rounded-full transition-all duration-500 w-0"></div>
+            </div>
+            <p id="progress-callout" class="text-[11px] text-gray-400 text-center">Faltam 100% dos números para bater a meta do Acampamento Jovem 2027!</p>
+        </div>
+    </section>
+
+    <!-- HERO SECTION & DETALHES DO PRODUTO -->
+    <section class="max-w-6xl mx-auto px-4 pt-6 pb-4 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+            
+            <!-- GALERIA DE FOTOS -->
+            <div class="lg:col-span-6 space-y-4">
+                <div class="bg-dark-card border border-dark-border rounded-3xl p-4 relative overflow-hidden shadow-2xl">
+                    <div class="absolute top-4 left-4 z-10 bg-accent-yellow text-dark-bg font-black px-3 py-1 rounded-full text-xs uppercase tracking-wider shadow-lg flex items-center gap-1.5">
+                        <i class="fa-solid fa-trophy"></i> Patinete Novo
+                    </div>
+                    
+                    <div class="relative h-64 sm:h-80 w-full rounded-2xl overflow-hidden bg-white flex items-center justify-center p-2">
+                        <img id="main-scooter-img" src="foto1.jpg" alt="Patinete Elétrico" class="max-h-full max-w-full object-contain transition-all duration-300">
+                    </div>
+
+                    <div class="grid grid-cols-7 gap-1.5 mt-3">
+                        <button onclick="setScooterImg('foto1.jpg')" class="border-2 border-pix rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto1.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto2.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto2.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto3.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto3.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto4.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto4.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto5.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto5.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto6.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto6.jpg" class="h-full object-contain"></button>
+                        <button onclick="setScooterImg('foto7.jpg')" class="border border-dark-border rounded-lg overflow-hidden bg-white h-11 flex items-center justify-center"><img src="foto7.jpg" class="h-full object-contain"></button>
+                    </div>
+                </div>
+
+                <!-- IGREJA ORGANIZADORA, INSTAGRAM E SUPORTE -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-4 text-xs space-y-3">
+                    <div class="flex flex-wrap items-center justify-between gap-2">
+                        <h3 class="font-bold text-white text-sm flex items-center gap-2"><i class="fa-solid fa-church text-pix"></i> Igreja Organizadora:</h3>
+                        <a href="https://www.instagram.com/midiabatista1?dlrf=a3g5am03bmcyb3Nm" target="_blank" class="bg-pink-600 hover:bg-pink-500 text-white font-bold px-3 py-1.5 rounded-lg flex items-center gap-1.5 transition shadow-md">
+                            <i class="fa-brands fa-instagram text-sm"></i> Siga no Instagram
+                        </a>
+                    </div>
+                    <p class="text-gray-300"><b>Igreja Batista em Rio Doce (1ª Etapa)</b> • Pr. Jorge Josemar</p>
+                    
+                    <div class="bg-dark-bg p-3 rounded-xl border border-dark-border text-gray-300 flex items-center justify-between gap-2">
+                        <div>
+                            <span class="text-white font-bold block text-[11px]"><i class="fa-solid fa-headset text-pix"></i> Precisa de Ajuda ou Teve Algum Problema?</span>
+                            <span class="text-[11px] text-gray-400">Fale com o Suporte Oficial: <b>(81) 98481-0046</b></span>
+                        </div>
+                        <a href="https://wa.me/5581984810046?text=Olá!%20Tive%20uma%20dúvida/inconsistência%20na%20escolha%20dos%20números." target="_blank" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-3 py-2 rounded-lg whitespace-nowrap flex items-center gap-1.5 shadow">
+                            <i class="fa-brands fa-whatsapp text-sm"></i> WhatsApp
+                        </a>
+                    </div>
+
+                    <p class="text-[11px] text-gray-400 border-t border-dark-border pt-2">📅 <b>Data Oficial do Sorteio:</b> 13/12/2027 (Live ao vivo no Instagram)</p>
+                </div>
+            </div>
+
+            <!-- DESCRIÇÃO E TABELA DE PREÇOS -->
+            <div class="lg:col-span-6 space-y-5">
+                <div>
+                    <div class="inline-block px-3 py-1 rounded-lg bg-accent-green/10 text-accent-green font-semibold text-xs mb-2 border border-accent-green/20">
+                        ⚡ 10.000 Números da Sorte
+                    </div>
+                    <h1 class="text-3xl sm:text-4xl font-display font-black text-white tracking-tight leading-tight">
+                        Concorra a 1 Patinete Elétrico e Ajude Nossos Jovens!
+                    </h1>
+                </div>
+
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-4 space-y-2 text-xs text-gray-300">
+                    <h4 class="font-bold text-white text-sm flex items-center gap-2 border-b border-dark-border pb-1">
+                        <i class="fa-solid fa-circle-check text-pix"></i> Destaques do Patinete:
+                    </h4>
+                    <ul class="space-y-1.5 list-disc list-inside">
+                        <li>Patinete elétrico com <b>assento removível</b></li>
+                        <li>Design dobrável com <b>banco / bolsa portátil</b></li>
+                        <li>Ideal para <b>transporte urbano</b></li>
+                        <li>Recomendado para <b>+14 anos</b></li>
+                    </ul>
+                </div>
+
+                <!-- TABELA DE PREÇOS PROGRESSIVOS -->
+                <div class="bg-dark-card border border-dark-border rounded-2xl p-4 space-y-2">
+                    <h4 class="text-xs font-bold text-gray-300 uppercase tracking-wider border-b border-dark-border pb-1">Desconto Progressivo Automático:</h4>
+                    <div class="grid grid-cols-2 gap-2 text-xs">
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-gray-400 block">1 a 9 cotas</span><strong class="text-white text-sm">R$ 2,50 / un</strong></div>
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-gray-400 block">10 a 29 cotas</span><strong class="text-accent-green text-sm">R$ 2,00 / un</strong></div>
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-gray-400 block">30 a 49 cotas</span><strong class="text-accent-green text-sm">R$ 1,50 / un</strong></div>
+                        <div class="bg-gradient-to-br from-pix/20 to-accent-green/10 p-3 rounded-xl border border-accent-green glow-green"><span class="text-accent-green font-bold block">50+ cotas</span><strong class="text-accent-green text-base">R$ 1,00 / un</strong></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- SELEÇÃO DE NÚMEROS -->
+    <section class="max-w-6xl mx-auto px-4 py-8 w-full">
+        <div class="bg-dark-card border border-dark-border rounded-3xl p-4 sm:p-6 shadow-2xl">
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6 border-b border-dark-border pb-6">
+                <div>
+                    <h2 class="text-2xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-ticket text-pix"></i> Selecione seus Números</h2>
+                    <p class="text-xs sm:text-sm text-gray-400">Escolha manualmente ou gere números automaticamente.</p>
+                </div>
+                
+                <!-- GERADOR AUTOMÁTICO DE NÚMEROS -->
+                <div class="flex items-center gap-2 bg-dark-bg p-2 rounded-2xl border border-dark-border">
+                    <input type="number" id="auto-qty-input" min="1" max="100" value="5" class="w-16 bg-dark-card border border-dark-border rounded-xl px-2 py-1.5 text-center text-sm text-white font-bold focus:outline-none focus:border-pix">
+                    <button onclick="generateAutomaticNumbers()" class="bg-gradient-to-r from-pix to-pix-dark text-dark-bg font-extrabold px-4 py-2 rounded-xl transition text-xs flex items-center gap-1.5 shadow-lg">
+                        <i class="fa-solid fa-robot"></i> Gerar Automático
+                    </button>
+                </div>
+            </div>
+
+            <!-- BOTÃO SURPRESINHA COM SETA PISCANDO -->
+            <div class="mb-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-dark-bg p-3 rounded-2xl border border-dark-border">
+                <div class="flex items-center gap-2 text-xs text-amber-300 font-bold">
+                    <i class="fa-solid fa-arrow-right fa-bounce text-accent-green text-lg"></i>
+                    <span>Quer cotas rápidas? Clique ao lado para puxar uma surpresinha!</span>
+                </div>
+                <button onclick="selectRandomNumbers(10)" class="w-full sm:w-auto bg-gradient-to-r from-accent-green to-pix text-dark-bg font-extrabold px-6 py-3 rounded-xl transition flex items-center justify-center gap-2 shadow-lg glow-green text-sm">
+                    <i class="fa-solid fa-wand-magic-sparkles text-lg"></i> Surpresinha (+10) <i class="fa-solid fa-arrow-right fa-bounce"></i>
+                </button>
+            </div>
+
+            <div class="mb-6 grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <button onclick="addQuickQuantity(10)" class="bg-dark-bg hover:bg-dark-hover border border-dark-border p-3 rounded-xl text-center"><span class="text-base font-black text-white">+10 NÚMEROS</span><span class="block text-[10px] text-accent-green">R$ 2,00/cada</span></button>
+                <button onclick="addQuickQuantity(30)" class="bg-dark-bg hover:bg-dark-hover border border-dark-border p-3 rounded-xl text-center"><span class="text-base font-black text-white">+30 NÚMEROS</span><span class="block text-[10px] text-accent-green">R$ 1,50/cada</span></button>
+                <button onclick="addQuickQuantity(50)" class="bg-dark-bg hover:bg-dark-hover border border-dark-border p-3 rounded-xl text-center"><span class="text-base font-black text-white">+50 NÚMEROS</span><span class="block text-[10px] text-accent-green">R$ 1,00/cada</span></button>
+                <button onclick="addQuickQuantity(100)" class="bg-dark-bg hover:bg-dark-hover border border-dark-border p-3 rounded-xl text-center"><span class="text-base font-black text-white">+100 NÚMEROS</span><span class="block text-[10px] text-accent-green">R$ 1,00/cada</span></button>
+            </div>
+
+            <!-- BUSCA E LEGENDA COM QUANTIDADES EM TEMPO REAL -->
+            <div class="flex flex-col lg:flex-row gap-3 mb-4 items-center justify-between">
+                <div class="relative w-full lg:w-72">
+                    <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-500 text-sm"></i>
+                    <input type="text" id="search-input" oninput="filterNumbers()" placeholder="Buscar ex: 2540" class="w-full bg-dark-bg border border-dark-border rounded-xl pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-pix">
+                </div>
+                
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs w-full lg:w-auto">
+                    <div class="bg-dark-bg px-3 py-1.5 rounded-xl border border-dark-border flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-md bg-dark-bg border border-dark-border"></span>
+                        <span class="text-gray-300">Livre: <b id="count-free" class="text-white">10000</b></span>
+                    </div>
+                    <div class="bg-dark-bg px-3 py-1.5 rounded-xl border border-dark-border flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-md bg-accent-green"></span>
+                        <span class="text-gray-300">Selecionado: <b id="count-selected" class="text-accent-green">0</b></span>
+                    </div>
+                    <div class="bg-dark-bg px-3 py-1.5 rounded-xl border border-dark-border flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-md bg-yellow-500/30 border border-yellow-500/50"></span>
+                        <span class="text-gray-300">Reservado (30m): <b id="count-reserved" class="text-yellow-400">0</b></span>
+                    </div>
+                    <div class="bg-dark-bg px-3 py-1.5 rounded-xl border border-dark-border flex items-center gap-2">
+                        <span class="w-3 h-3 rounded-md bg-red-600/30 border border-red-600/50"></span>
+                        <span class="text-gray-300">Pago: <b id="count-paid" class="text-red-400">0</b></span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-dark-bg p-3 sm:p-4 rounded-2xl border border-dark-border">
+                <div id="numbers-grid" class="grid grid-cols-5 sm:grid-cols-8 md:grid-cols-10 lg:grid-cols-12 gap-1.5 max-h-80 overflow-y-auto custom-scrollbar pr-1"></div>
+            </div>
+
+            <div class="mt-4 flex flex-col md:flex-row justify-between items-center gap-3 pt-2 border-t border-dark-border/50">
+                <div class="flex items-center gap-2">
+                    <button onclick="clearSelection()" class="text-gray-400 hover:text-red-400 transition text-xs flex items-center gap-1.5 bg-dark-bg px-3 py-2 rounded-xl border border-dark-border">
+                        <i class="fa-solid fa-trash-can"></i> Limpar seleção
+                    </button>
+                    <span id="selected-count-badge" class="text-pix font-bold text-xs bg-pix/10 px-3 py-2 rounded-xl border border-pix/20">0 selecionados</span>
+                </div>
+
+                <div class="flex items-center gap-1.5 overflow-x-auto max-w-full custom-scrollbar pb-1 w-full md:w-auto">
+                    <button onclick="setNumberRange(0, 999)" class="range-btn active text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">0000-0999</button>
+                    <button onclick="setNumberRange(1000, 1999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">1000-1999</button>
+                    <button onclick="setNumberRange(2000, 2999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">2000-2999</button>
+                    <button onclick="setNumberRange(3000, 3999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">3000-3999</button>
+                    <button onclick="setNumberRange(4000, 4999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">4000-4999</button>
+                    <button onclick="setNumberRange(5000, 5999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">5000-5999</button>
+                    <button onclick="setNumberRange(6000, 6999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">6000-6999</button>
+                    <button onclick="setNumberRange(7000, 7999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">7000-7999</button>
+                    <button onclick="setNumberRange(8000, 8999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">8000-8999</button>
+                    <button onclick="setNumberRange(9000, 9999)" class="range-btn text-[11px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dark-border bg-dark-bg text-gray-300">9000-9999</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- RESUMO E CHECKOUT -->
+    <section class="max-w-6xl mx-auto px-4 pb-12 w-full">
+        <div class="bg-dark-card border-2 border-pix/40 rounded-3xl p-6 shadow-2xl">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+                <div class="lg:col-span-7 space-y-3">
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2"><i class="fa-solid fa-receipt text-accent-green"></i> Resumo da Doação</h3>
+                    <div id="discount-tag" class="hidden"><span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-accent-green/20 text-accent-green border border-accent-green/40"><i class="fa-solid fa-tag"></i> DESCONTO PROGRESSIVO APLICADO!</span></div>
+                    <div class="grid grid-cols-3 gap-2 pt-2">
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-xs text-gray-400 block">Qtd</span><span id="summary-qty" class="text-xl font-black text-white">0</span></div>
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-xs text-gray-400 block">Preço Un.</span><span id="summary-unit-price" class="text-xl font-black text-white">R$ 2,50</span></div>
+                        <div class="bg-dark-bg p-3 rounded-xl border border-dark-border"><span class="text-xs text-gray-400 block">Economia</span><span id="summary-savings" class="text-xl font-black text-accent-yellow">R$ 0,00</span></div>
+                    </div>
+                    <div class="text-xs text-gray-400"><span>Números escolhidos: </span><div id="selected-numbers-list" class="inline-flex flex-wrap gap-1 font-mono font-bold text-accent-green max-h-12 overflow-y-auto">Nenhum selecionado.</div></div>
+                </div>
+                <div class="lg:col-span-5 bg-dark-bg p-5 rounded-2xl border border-dark-border flex flex-col justify-between space-y-4">
+                    <div><span class="text-xs text-gray-400 uppercase">Valor Total</span><div class="flex items-baseline gap-1"><span class="text-sm text-accent-green font-bold">R$</span><span id="summary-total" class="text-4xl font-black text-white">0,00</span></div></div>
+                    <button onclick="openCheckoutModal()" id="btn-checkout" disabled class="w-full bg-gray-700 text-gray-400 font-extrabold py-4 rounded-xl transition cursor-not-allowed text-base shadow-lg">Avançar para Pagamento</button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- MODAL REGULAMENTO -->
+    <div id="rules-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border w-full max-w-2xl rounded-3xl p-6 relative shadow-2xl max-h-[85vh] overflow-y-auto space-y-4">
+            <button onclick="closeRulesModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+            <h3 class="text-xl font-bold text-white flex items-center gap-2 border-b border-dark-border pb-3"><i class="fa-solid fa-file-contract text-pix"></i> Regulamento Oficial - Vakinha da Sorte</h3>
+            
+            <div class="text-xs text-gray-300 space-y-3 leading-relaxed">
+                <p><b>1. DO OBJETIVO E REALIZAÇÃO:</b> Iniciativa para arrecadação de fundos destinados ao <b>Acampamento Jovem 2027</b>, promovido pela <b>Igreja Batista em Rio Doce (1ª Etapa) – Pr. Jorge Josemar</b>. Todo o lucro líquido será revertido para o evento dos jovens.</p>
+                <p><b>2. DO PRÊMIO:</b> 01 (um) Patinete Elétrico novo. O prêmio é individual e intransferível.</p>
+                <p><b>3. DOS BILHETES E VALORES:</b> 10.000 números disponíveis (0000 a 9999). Desconto progressivo: 1 cota (R$ 2,50), 10 cotas (R$ 2,00/un), 30 cotas (R$ 1,50/un) e 50 cotas em diante (R$ 1,00/un).</p>
+                <p><b>4. DATA E PRORROGAÇÃO DO SORTEIO:</b> Programado para <b>13/12/2027</b>. Caso não atinja a meta mínima de 70% das cotas, o sorteio será prorrogado para <b>27/12/2027</b>.</p>
+                <p><b>5. DA DINÂMICA DO SORTEIO E VERACIDADE:</b> Transmissão ao vivo (Live) no Instagram oficial da igreja organizadora logo após o término do culto da noite.</p>
+                <p><b>6. RETIRADA DO PRÊMIO:</b> Prazo impreterível de 30 dias corridos para reivindicar e retirar o patinete.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL CHECKOUT -->
+    <div id="checkout-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border w-full max-w-lg rounded-3xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeCheckoutModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+
+            <div id="checkout-step-1">
+                <div class="text-center mb-6">
+                    <h3 class="text-xl font-bold text-white">Seus Dados de Contato</h3>
+                    <p class="text-xs text-gray-400">Preencha seu nome, CPF e WhatsApp para garantir a reserva de 30 minutos.</p>
+                </div>
+                <form onsubmit="handleCheckoutSubmit(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Nome Completo *</label>
+                        <input type="text" id="user-name" required placeholder="Ex: Eduardo Silva" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pix">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">CPF *</label>
+                        <input type="text" id="user-cpf" required placeholder="000.000.000-00" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pix">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">WhatsApp com DDD *</label>
+                        <input type="tel" id="user-phone" required placeholder="(81) 99999-9999" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-pix">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-2">Forma de Pagamento:</label>
+                        <div class="grid grid-cols-2 gap-3">
+                            <label class="border border-pix/50 bg-dark-bg p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-pix">
+                                <input type="radio" name="pay-method" value="pix" checked onchange="togglePayMethod('pix')" class="accent-pix">
+                                <span class="text-xs font-bold text-white"><i class="fa-solid fa-qrcode text-pix"></i> Pix Instantâneo</span>
+                            </label>
+                            <label class="border border-dark-border bg-dark-bg p-3 rounded-xl flex items-center gap-2 cursor-pointer hover:border-accent-green">
+                                <input type="radio" name="pay-method" value="money" onchange="togglePayMethod('money')" class="accent-accent-green">
+                                <span class="text-xs font-bold text-white"><i class="fa-solid fa-money-bill-wave text-accent-green"></i> Dinheiro / Presencial</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="bg-dark-bg p-3 rounded-xl border border-dark-border flex justify-between items-center text-xs"><span class="text-gray-400"><span id="modal-qty">0</span> Bilhete(s)</span><span class="text-accent-green font-extrabold text-base">R$ <span id="modal-total">0,00</span></span></div>
+                    <button type="submit" id="btn-submit-pay" class="w-full bg-gradient-to-r from-pix to-accent-green text-dark-bg font-extrabold py-3.5 rounded-xl transition shadow-lg glow-pix"><i class="fa-solid fa-qrcode"></i> Reservar e Gerar Pix</button>
+                </form>
+            </div>
+
+            <!-- PASSO 2 PIX -->
+            <div id="checkout-step-2-pix" class="hidden text-center space-y-4">
+                <div class="inline-block bg-amber-500/10 text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-500/30"><i class="fa-solid fa-clock animate-pulse"></i> Reservado por 30 min | Aguardando Pagamento</div>
+                <h3 class="text-lg font-bold text-white">Escaneie o QR Code abaixo para pagar:</h3>
+                
+                <div class="bg-white p-4 rounded-2xl inline-block mx-auto shadow-xl min-w-[200px] min-h-[200px] flex items-center justify-center" id="qrcode-container"></div>
+                
+                <div class="bg-dark-bg p-3 rounded-xl border border-dark-border text-xs text-left space-y-1">
+                    <p class="text-gray-300 font-bold border-b border-dark-border pb-1">Dados da Conta Efí S.A.:</p>
+                    <p class="text-gray-400"><strong class="text-white">Titular:</strong> Eduardo Moura da Silva Galvão</p>
+                    <p class="text-gray-400"><strong class="text-white">Chave Pix:</strong> e208d04b-f284-43bb-848a-1115c16ae4c3</p>
+                    <p class="text-gray-400"><strong class="text-white">Banco:</strong> 364 – Efí S.A. – IP</p>
+                    <p class="text-gray-400"><strong class="text-white">Agência:</strong> 0001 | <strong class="text-white">Conta:</strong> 963471-1</p>
+                    <p class="text-accent-green font-bold text-sm pt-1">Valor Total: R$ <span id="pix-total-val">0,00</span></p>
+                </div>
+                
+                <div class="space-y-2">
+                    <label class="block text-xs text-gray-400">Pix Copia e Cola:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="pix-copy-paste" readonly class="bg-dark-bg border border-dark-border rounded-xl px-3 py-2 text-xs text-gray-300 w-full font-mono">
+                        <button onclick="copyPixCode()" class="bg-pix text-dark-bg font-bold px-4 py-2 rounded-xl text-xs">Copiar</button>
+                    </div>
+                </div>
+                
+                <button onclick="sendWhatsAppConfirmation('pix')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Enviar Comprovante no WhatsApp
+                </button>
+                <div id="copy-toast" class="hidden bg-accent-green text-dark-bg text-xs font-bold py-2 px-4 rounded-lg">Pix Copiado!</div>
+            </div>
+
+            <!-- PASSO 2 DINHEIRO -->
+            <div id="checkout-step-2-money" class="hidden text-center space-y-4">
+                <div class="inline-block bg-amber-500/10 text-amber-300 px-3 py-1 rounded-full text-xs font-bold border border-amber-500/30"><i class="fa-solid fa-clock animate-pulse"></i> Reservado por 30 min | Presencial</div>
+                <h3 class="text-xl font-bold text-white">Reserva Solicitada em Dinheiro</h3>
+                <p class="text-xs text-gray-300">Seus números foram salvos como <b>Reservados</b> no sistema por 30 minutos. Clique abaixo para enviar os detalhes no WhatsApp do suporte e combinar o pagamento presencial.</p>
+                <button onclick="sendWhatsAppConfirmation('money')" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-extrabold py-3.5 rounded-xl transition flex items-center justify-center gap-2 text-sm shadow-lg">
+                    <i class="fa-brands fa-whatsapp text-lg"></i> Combinar Pagamento no WhatsApp
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL ADMIN E AUDITORIA -->
+    <div id="admin-modal" class="fixed inset-0 bg-black/90 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+        <div class="bg-dark-card border border-dark-border w-full max-w-xl rounded-3xl p-6 relative shadow-2xl max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAdminModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"><i class="fa-solid fa-xmark"></i></button>
+
+            <!-- AUTH MANUAL -->
+            <div id="admin-auth" class="space-y-4 text-center">
+                <h3 class="text-xl font-bold text-white">Painel Administrativo</h3>
+                <form onsubmit="authenticateAdmin(event)" class="space-y-3">
+                    <input type="text" id="admin-id-input" placeholder="ID do Administrador" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white text-center">
+                    <input type="password" id="admin-password" placeholder="Senha" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white text-center">
+                    <button type="submit" class="w-full bg-pix text-dark-bg font-bold py-3 rounded-xl transition text-sm">Entrar</button>
+                </form>
+                <p id="admin-error" class="text-xs text-red-400 hidden">ID ou senha incorretos.</p>
+            </div>
+
+            <!-- PAINEL DE CONTROLE -->
+            <div id="admin-panel" class="hidden space-y-5">
+                <div class="border-b border-dark-border pb-3 flex justify-between items-center">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Painel de Gestão</h3>
+                        <span id="active-operator-badge" class="text-[11px] text-pix font-bold">Operador: -</span>
+                    </div>
+                    <button onclick="logoutAdmin()" class="text-xs text-gray-400 hover:text-red-400">Sair</button>
+                </div>
+
+                <!-- SEÇÃO EXCLUSIVA MASTER ADMIN PARA CRIAR/ALTERAR IDs -->
+                <div id="master-admin-section" class="hidden bg-dark-bg p-4 rounded-2xl border border-accent-yellow/40 space-y-3">
+                    <h4 class="text-xs font-bold text-accent-yellow flex items-center gap-2"><i class="fa-solid fa-user-gear"></i> Painel Master (Criar / Alterar Administradores)</h4>
+                    <p class="text-[11px] text-gray-400">Cadastre um novo ID/Senha ou altere a senha de um administrador existente.</p>
+                    <form onsubmit="handleSaveNewAdmin(event)" class="space-y-2">
+                        <input type="text" id="new-admin-id" required placeholder="Nome / ID do Admin" class="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white">
+                        <input type="password" id="new-admin-pass" required placeholder="Nova Senha" class="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white">
+                        <input type="text" id="new-admin-initial" required placeholder="Iniciais (Ex: E.M.)" class="w-full bg-dark-card border border-dark-border rounded-xl px-3 py-2 text-xs text-white">
+                        <button type="submit" class="w-full bg-accent-yellow hover:opacity-90 text-dark-bg font-bold py-2.5 rounded-xl text-xs transition">Salvar / Atualizar Admin</button>
+                    </form>
+                    <p id="master-toast" class="text-xs text-accent-green hidden font-bold text-center">Administrador salvo com sucesso!</p>
+                </div>
+
+                <!-- EXPORTAÇÃO EXCEL -->
+                <div class="bg-dark-bg p-4 rounded-2xl border border-dark-border flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-left">
+                        <h4 class="text-xs font-bold text-white"><i class="fa-solid fa-file-excel text-emerald-500"></i> Relatório em Excel (XLSX)</h4>
+                        <p class="text-[11px] text-gray-400">Baixe a planilha estruturada de compradores e vendas.</p>
+                    </div>
+                    <button onclick="exportToExcel()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold px-4 py-2.5 rounded-xl text-xs flex items-center gap-2 whitespace-nowrap shadow-lg">
+                        <i class="fa-solid fa-download"></i> Exportar XLSX
+                    </button>
+                </div>
+
+                <!-- MÓDULO DE SORTEIO ELETRÔNICO AO VIVO -->
+                <div class="bg-dark-bg p-4 rounded-2xl border border-dark-border space-y-3">
+                    <h4 class="text-xs font-bold text-white flex items-center gap-2"><i class="fa-solid fa-dice text-accent-yellow"></i> Módulo de Sorteio Ao Vivo (Auditoria)</h4>
+                    <p class="text-[11px] text-gray-400">Realiza o sorteio aleatório utilizando exclusivamente a base de cotas marcadas como **PAGAS**.</p>
+                    
+                    <div id="winner-display" class="hidden bg-accent-yellow/10 border border-accent-yellow p-3 rounded-xl text-center">
+                        <span class="text-xs text-gray-300 block uppercase font-bold">🎉 Número Sorteado 🎉</span>
+                        <span id="winner-number" class="text-3xl font-black text-accent-yellow font-mono">0000</span>
+                        <span id="winner-details" class="text-xs text-white block mt-1">Ganhador: -</span>
+                    </div>
+
+                    <button onclick="drawWinnerLive()" class="w-full bg-gradient-to-r from-accent-yellow to-amber-500 text-dark-bg font-extrabold py-3 rounded-xl text-xs transition shadow-lg">
+                        <i class="fa-solid fa-play"></i> GIRAR SORTEIO AO VIVO
+                    </button>
+                </div>
+
+                <!-- ALTERAÇÃO MANUAL / EM LOTE -->
+                <div class="space-y-3 pt-2">
+                    <label class="block text-xs font-semibold text-gray-300">Números dos Bilhetes (Suporta formato 0000-0010 ou 0015,0098,0856):</label>
+                    <input type="text" id="admin-target-num" placeholder="Ex: 0000-0010 ou 0015,0098,0856" class="w-full bg-dark-bg border border-dark-border rounded-xl px-4 py-3 text-sm text-white font-mono text-center">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <button onclick="changeNumberStatus('paid')" class="bg-red-600 hover:bg-red-500 text-white font-bold py-3 rounded-xl text-xs">Marcar PAGO (Vermelho)</button>
+                        <button onclick="changeNumberStatus('free')" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-3 rounded-xl text-xs">Liberar NÚMERO (Livre)</button>
+                    </div>
+                </div>
+
+                <div id="admin-toast" class="hidden text-center text-xs font-bold py-2 px-3 rounded-lg bg-dark-bg border border-dark-border text-accent-green">Status atualizado com sucesso!</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- FIREBASE SDK & TEMPO REAL -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCQ4Q8ouSrICjyGMMmDRBGmvx95VOp030Q",
+            authDomain: "rifa-patinente.firebaseapp.com",
+            databaseURL: "https://rifa-patinente-default-rtdb.firebaseio.com",
+            projectId: "rifa-patinente",
+            storageBucket: "rifa-patinente.firebasestorage.app",
+            messagingSenderId: "667780501771",
+            appId: "1:667780501771:web:569c1194e6d648b696920e",
+            measurementId: "G-2YMFYDL4BT"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        window.TOTAL_NUMBERS = 10000;
+        window.ADMIN_WHATSAPP = "5581984810046";
+        window.dbInstance = db;
+
+        window.ADMIN_USERS = JSON.parse(localStorage.getItem('saved_admin_users')) || {
+            "admin": { pass: "12345678", initial: "ADM", isMaster: true },
+            "Luiz Alves": { pass: "1234", initial: "L.A." },
+            "Elisandra Marcela": { pass: "1234", initial: "E.M." },
+            "Robelia Rodrigues": { pass: "1234", initial: "R.R." },
+            "Alisson Roberto": { pass: "1234", initial: "A.R." },
+            "Eduardo Moura": { pass: "1234", initial: "E.M." }
+        };
+
+        window.activeOperatorName = "";
+        window.activeOperatorInitial = "";
+        window.currentRangeMin = 0;
+        window.currentRangeMax = 999;
+
+        window.selectedNumbers = new Set();
+        window.reservedNumbers = new Set();
+        window.paidNumbers = new Set();
+        window.ticketsData = {};
+
+        const ticketsRef = ref(db, 'tickets');
+        onValue(ticketsRef, (snapshot) => {
+            const data = snapshot.val() || {};
+            window.ticketsData = data;
+            window.reservedNumbers.clear();
+            window.paidNumbers.clear();
+
+            const now = new Date().getTime();
+            const THIRTY_MINUTES_MS = 30 * 60 * 1000;
+
+            Object.keys(data).forEach(numStr => {
+                const num = parseInt(numStr, 10);
+                const ticket = data[numStr];
+
+                if (ticket.status === 'reserved') {
+                    const reservedAt = ticket.updatedAt ? new Date(ticket.updatedAt).getTime() : 0;
+                    if (now - reservedAt > THIRTY_MINUTES_MS) {
+                        window.saveTicketToFirebase(num, 'free');
+                        return;
+                    } else {
+                        window.reservedNumbers.add(num);
+                    }
+                }
+                
+                if (ticket.status === 'paid' || ticket.status === 'pago') window.paidNumbers.add(num);
+            });
+
+            window.renderGrid(document.getElementById('search-input').value.trim());
+            window.updateSummary();
+            window.updateProgressBar();
+            window.updateCountersDisplay();
+        });
+
+        window.saveTicketToFirebase = function(num, status, buyerInfo = null, operatorInitials = "") {
+            const ticketRef = ref(db, 'tickets/' + num);
+            if (status === 'free') {
+                set(ticketRef, null);
+            } else {
+                const existing = window.ticketsData[num] || {};
+                const finalBuyer = buyerInfo || existing.buyer || null;
+
+                set(ticketRef, {
+                    status: status,
+                    updatedAt: new Date().toISOString(),
+                    buyer: finalBuyer,
+                    confirmedBy: operatorInitials || existing.confirmedBy || null
+                });
+            }
+        };
+
+        window.updateProgressBar = function() {
+            const totalSold = window.paidNumbers.size;
+            const percentage = ((totalSold / TOTAL_NUMBERS) * 100).toFixed(1);
+            const remainingPercent = (100 - parseFloat(percentage)).toFixed(1);
+
+            document.getElementById('progress-bar-fill').style.width = `${percentage}%`;
+            document.getElementById('progress-text-detail').innerText = `${percentage}% vendido (${totalSold} de ${TOTAL_NUMBERS} cotas)`;
+            document.getElementById('progress-callout').innerText = `${percentage}% dos números vendidos. Faltam apenas ${remainingPercent}% para a meta do Acampamento Jovem 2027!`;
+        };
+
+        window.updateCountersDisplay = function() {
+            const paid = window.paidNumbers.size;
+            const reserved = window.reservedNumbers.size;
+            const selected = window.selectedNumbers.size;
+            const free = TOTAL_NUMBERS - (paid + reserved);
+
+            document.getElementById('count-free').innerText = free;
+            document.getElementById('count-selected').innerText = selected;
+            document.getElementById('count-reserved').innerText = reserved;
+            document.getElementById('count-paid').innerText = paid;
+        };
+    </script>
+
+    <!-- SCRIPT PRINCIPAL DA APLICAÇÃO -->
+    <script>
+        let currentBuyerName = "";
+        let currentBuyerCpf = "";
+        let currentBuyerPhone = "";
+        let currentCalculatedTotal = "0.00";
+        // VARIÁVEL GLOBAL PARA GUARDAR O PIX COPIA E COLA GERADO
+        let currentGeneratedPixCode = "";
+
+        const gridContainer = document.getElementById('numbers-grid');
+        const searchInput = document.getElementById('search-input');
+        const summaryQty = document.getElementById('summary-qty');
+        const summaryUnitPrice = document.getElementById('summary-unit-price');
+        const summarySavings = document.getElementById('summary-savings');
+        const summaryTotal = document.getElementById('summary-total');
+        const discountTag = document.getElementById('discount-tag');
+        const selectedNumbersList = document.getElementById('selected-numbers-list');
+        const selectedCountBadge = document.getElementById('selected-count-badge');
+        const btnCheckout = document.getElementById('btn-checkout');
+
+        function setScooterImg(src) { document.getElementById('main-scooter-img').src = src; }
+
+        function getUnitPrice(qty) {
+            if (qty >= 50) return 1.00;
+            if (qty >= 30) return 1.50;
+            if (qty >= 10) return 2.00;
+            return 2.50;
+        }
+
+        function setNumberRange(min, max) {
+            currentRangeMin = min;
+            currentRangeMax = max;
+            searchInput.value = '';
+
+            const rangeBtns = document.querySelectorAll('.range-btn');
+            rangeBtns.forEach(btn => {
+                if (btn.innerText === `${String(min).padStart(4, '0')}-${String(max).padStart(4, '0')}`) btn.classList.add('active');
+                else btn.classList.remove('active');
+            });
+            renderGrid();
+        }
+
+        function renderGrid(filterText = '') {
+            gridContainer.innerHTML = '';
+            let count = 0;
+
+            for (let i = 0; i < TOTAL_NUMBERS; i++) {
+                const formattedNum = String(i).padStart(4, '0');
+                if (filterText) {
+                    if (!formattedNum.includes(filterText)) continue;
+                } else {
+                    if (i < currentRangeMin || i > currentRangeMax) continue;
+                }
+                count++;
+
+                const isPaid = paidNumbers.has(i);
+                const isReserved = reservedNumbers.has(i);
+                const isSelected = selectedNumbers.has(i);
+
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = `number-btn p-2 text-xs font-mono font-bold rounded-lg border text-center transition `;
+                
+                if (isPaid) { btn.classList.add('paid'); btn.disabled = true; }
+                else if (isReserved) { btn.classList.add('reserved'); btn.disabled = true; }
+                else if (isSelected) { btn.classList.add('selected'); }
+                else { btn.classList.add('bg-dark-card', 'border-dark-border', 'text-gray-300', 'hover:border-pix'); }
+
+                btn.innerText = formattedNum;
+                btn.onclick = () => toggleNumberSelection(i);
+                gridContainer.appendChild(btn);
+            }
+            if (typeof updateCountersDisplay === 'function') updateCountersDisplay();
+        }
+
+        function toggleNumberSelection(num) {
+            if (reservedNumbers.has(num) || paidNumbers.has(num)) return;
+            if (selectedNumbers.has(num)) selectedNumbers.delete(num);
+            else selectedNumbers.add(num);
+            renderGrid(searchInput.value);
+            updateSummary();
+            updateCountersDisplay();
+        }
+
+        function addQuickQuantity(qty) {
+            let added = 0;
+            while (added < qty && selectedNumbers.size < TOTAL_NUMBERS) {
+                const randomNum = Math.floor(Math.random() * TOTAL_NUMBERS);
+                if (!reservedNumbers.has(randomNum) && !paidNumbers.has(randomNum) && !selectedNumbers.has(randomNum)) {
+                    selectedNumbers.add(randomNum);
+                    added++;
+                }
+            }
+            renderGrid(searchInput.value);
+            updateSummary();
+            updateCountersDisplay();
+        }
+
+        function generateAutomaticNumbers() {
+            const inputVal = parseInt(document.getElementById('auto-qty-input').value) || 1;
+            addQuickQuantity(inputVal);
+        }
+
+        function selectRandomNumbers(qty) { addQuickQuantity(qty); }
+        function clearSelection() { selectedNumbers.clear(); renderGrid(searchInput.value); updateSummary(); updateCountersDisplay(); }
+        function filterNumbers() { renderGrid(searchInput.value.trim()); }
+
+        function updateSummary() {
+            const qty = selectedNumbers.size;
+            let unitPrice = getUnitPrice(qty);
+            let total = qty * unitPrice;
+            let savings = qty * (2.50 - unitPrice);
+            currentCalculatedTotal = total.toFixed(2);
+
+            summaryQty.innerText = qty;
+            summaryUnitPrice.innerText = `R$ ${unitPrice.toFixed(2).replace('.', ',')}`;
+            summarySavings.innerText = `R$ ${savings.toFixed(2).replace('.', ',')}`;
+            summaryTotal.innerText = total.toFixed(2).replace('.', ',');
+            selectedCountBadge.innerText = `${qty} selecionado(s)`;
+
+            const modalQty = document.getElementById('modal-qty');
+            const modalTotal = document.getElementById('modal-total');
+            if (modalQty) modalQty.innerText = qty;
+            if (modalTotal) modalTotal.innerText = total.toFixed(2).replace('.', ',');
+
+            if (qty >= 10) discountTag.classList.remove('hidden');
+            else discountTag.classList.add('hidden');
+
+            if (qty > 0) {
+                const sortedArray = Array.from(selectedNumbers).sort((a, b) => a - b);
+                selectedNumbersList.innerHTML = sortedArray.map(n => `<span class="bg-dark-bg px-2 py-0.5 rounded border border-accent-green/30">${String(n).padStart(4, '0')}</span>`).join(' ');
+                btnCheckout.disabled = false;
+                btnCheckout.className = "w-full bg-gradient-to-r from-pix to-accent-green hover:opacity-95 text-dark-bg font-extrabold py-4 rounded-xl transition text-base shadow-lg glow-pix cursor-pointer";
+            } else {
+                selectedNumbersList.innerText = 'Nenhum selecionado.';
+                btnCheckout.disabled = true;
+                btnCheckout.className = "w-full bg-gray-700 text-gray-400 font-extrabold py-4 rounded-xl transition cursor-not-allowed text-base shadow-lg";
+            }
+        }
+
+        function openRulesModal() { document.getElementById('rules-modal').classList.remove('hidden'); }
+        function closeRulesModal() { document.getElementById('rules-modal').classList.add('hidden'); }
+        function openCheckoutModal() { updateSummary(); document.getElementById('checkout-modal').classList.remove('hidden'); }
+        function closeCheckoutModal() { document.getElementById('checkout-modal').classList.add('hidden'); }
+        function openAdminModal() { document.getElementById('admin-modal').classList.remove('hidden'); }
+        function closeAdminModal() { document.getElementById('admin-modal').classList.add('hidden'); }
+
+        function togglePayMethod(method) {
+            const btn = document.getElementById('btn-submit-pay');
+            if (method === 'pix') {
+                btn.innerHTML = `<i class="fa-solid fa-qrcode"></i> Reservar e Gerar Pix`;
+            } else {
+                btn.innerHTML = `<i class="fa-solid fa-money-bill-wave"></i> Reservar em Dinheiro`;
+            }
+        }
+
+        // SUBMISSÃO E GERAÇÃO DO QR CODE VISUAL CORRIGIDA
+        async function handleCheckoutSubmit(event) {
+            event.preventDefault();
+            currentBuyerName = document.getElementById('user-name').value.trim();
+            currentBuyerCpf = document.getElementById('user-cpf').value.trim();
+            currentBuyerPhone = document.getElementById('user-phone').value.trim();
+            const selectedMethod = document.querySelector('input[name="pay-method"]:checked').value;
+            const sortedArray = Array.from(selectedNumbers).sort((a, b) => a - b);
+
+            // 1. RESERVA DE 30 MINUTOS NO FIREBASE
+            sortedArray.forEach(num => {
+                if (window.saveTicketToFirebase) {
+                    window.saveTicketToFirebase(num, 'reserved', { 
+                        name: currentBuyerName, 
+                        cpf: currentBuyerCpf, 
+                        phone: currentBuyerPhone, 
+                        payMethod: selectedMethod 
+                    });
+                }
+            });
+
+            document.getElementById('checkout-step-1').classList.add('hidden');
+
+            if (selectedMethod === 'pix') {
+                try {
+                    const apiUrl = 'http://localhost:3000/api/pix/create'; 
+
+                    const response = await fetch(apiUrl, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name: currentBuyerName,
+                            cpf: currentBuyerCpf,
+                            phone: currentBuyerPhone,
+                            numbers: sortedArray,
+                            amount: currentCalculatedTotal
+                        })
+                    });
+
+                    const data = await response.json();
+
+                    if (data && data.success) {
+                        currentGeneratedPixCode = data.qrcode_code || data.pixCopiaECola || "";
+                        document.getElementById('pix-total-val').innerText = currentCalculatedTotal.replace('.', ',');
+                        document.getElementById('pix-copy-paste').value = currentGeneratedPixCode;
+                        
+                        const qrcodeContainer = document.getElementById('qrcode-container');
+                        qrcodeContainer.innerHTML = ''; // Limpa o container anterior
+
+                        // RENDERIZAÇÃO DO QR CODE (IMAGEM EM BASE64 OU VIA DESENHO COM QRCODEJS)
+                        if (data.qrcode_image && data.qrcode_image.length > 20) {
+                            qrcodeContainer.innerHTML = `<img src="${data.qrcode_image}" class="w-48 h-48 mx-auto border-2 border-pix p-1 rounded-xl shadow-md" alt="QR Code Pix" />`;
+                        } else if (currentGeneratedPixCode) {
+                            new QRCode(qrcodeContainer, {
+                                text: currentGeneratedPixCode,
+                                width: 192,
+                                height: 192,
+                                colorDark: "#0A0E17",
+                                colorLight: "#ffffff",
+                                correctLevel: QRCode.CorrectLevel.H
+                            });
+                        }
+                        
+                        document.getElementById('checkout-step-2-pix').classList.remove('hidden');
+
+                        listenPaymentStatus(data.txid);
+                        sendWhatsAppConfirmation('pix');
+                    } else {
+                        alert("Sua reserva de 30 minutos foi realizada! Redirecionando para o WhatsApp do suporte.");
+                        sendWhatsAppConfirmation('pix');
+                    }
+                } catch (err) {
+                    console.warn("Backend local offline. Reserva mantida no Firebase.");
+                    alert("Reserva confirmada por 30 minutos! Redirecionando para o WhatsApp do suporte.");
+                    sendWhatsAppConfirmation('pix');
+                }
+            } else {
+                // PAGAMENTO EM DINHEIRO / PRESENCIAL
+                document.getElementById('checkout-step-2-money').classList.remove('hidden');
+                sendWhatsAppConfirmation('money');
+            }
+        }
+
+        function listenPaymentStatus(txid) {
+            if (!window.dbInstance || !txid) return;
+            import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js").then(({ ref, onValue }) => {
+                const txRef = ref(window.dbInstance, `transactions/${txid}/status`);
+                onValue(txRef, (snapshot) => {
+                    if (snapshot.val() === 'PAID') {
+                        alert("🎉 Pagamento confirmado automaticamente! Seus números já constam como pagos.");
+                        closeCheckoutModal();
+                        selectedNumbers.clear();
+                    }
+                });
+            });
+        }
+
+        function copyPixCode() {
+            const input = document.getElementById('pix-copy-paste');
+            input.select();
+            document.execCommand('copy');
+            document.getElementById('copy-toast').classList.remove('hidden');
+            setTimeout(() => document.getElementById('copy-toast').classList.add('hidden'), 3000);
+        }
+
+        // CONFIRMAÇÃO VIA WHATSAPP COM CHAVE PIX ANEXADA
+        function sendWhatsAppConfirmation(type) {
+            const sortedArray = Array.from(selectedNumbers).sort((a, b) => a - b).map(n => String(n).padStart(4, '0'));
+            const methodLabel = (type === 'pix') ? 'Pix Instantâneo' : 'Dinheiro / Presencial';
+
+            let pixExtraInfo = "";
+            if (type === 'pix' && currentGeneratedPixCode) {
+                pixExtraInfo = `%0A%0A*Código Pix Copia e Cola:*%0A${encodeURIComponent(currentGeneratedPixCode)}%0A%0A_(Envie o comprovante nesta conversa para agilizar a baixa!)_`;
+            }
+
+            let message = `Olá! Fiz uma reserva na Vakinha da Sorte (Acampamento Jovem 2027).%0A%0A` +
+                `*Nome:* ${encodeURIComponent(currentBuyerName)}%0A` +
+                `*CPF:* ${encodeURIComponent(currentBuyerCpf)}%0A` +
+                `*WhatsApp:* ${encodeURIComponent(currentBuyerPhone)}%0A` +
+                `*Forma de Pagamento:* ${encodeURIComponent(methodLabel)}%0A` +
+                `*Quantidade:* ${selectedNumbers.size} cota(s)%0A` +
+                `*Valor Total:* R$ ${currentCalculatedTotal.replace('.', ',')}%0A` +
+                `*Números Reservados (30 min):* ${sortedArray.join(', ')}` + pixExtraInfo;
+
+            selectedNumbers.clear();
+            updateSummary();
+            updateCountersDisplay();
+            closeCheckoutModal();
+            window.open(`https://wa.me/${ADMIN_WHATSAPP}?text=${message}`, '_blank');
+        }
+
+        function authenticateAdmin(event) {
+            event.preventDefault();
+            const id = document.getElementById('admin-id-input').value.trim();
+            const pass = document.getElementById('admin-password').value;
+
+            if (ADMIN_USERS[id] && ADMIN_USERS[id].pass === pass) {
+                activeOperatorName = id;
+                activeOperatorInitial = ADMIN_USERS[id].initial || "ADM";
+                document.getElementById('active-operator-badge').innerText = `Operador: ${activeOperatorName} [${activeOperatorInitial}]`;
+                document.getElementById('admin-auth').classList.add('hidden');
+                document.getElementById('admin-panel').classList.remove('hidden');
+
+                if (ADMIN_USERS[id].isMaster || id === 'admin') {
+                    document.getElementById('master-admin-section').classList.remove('hidden');
+                } else {
+                    document.getElementById('master-admin-section').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('admin-error').classList.remove('hidden');
+            }
+        }
+
+        function handleSaveNewAdmin(event) {
+            event.preventDefault();
+            const newId = document.getElementById('new-admin-id').value.trim();
+            const newPass = document.getElementById('new-admin-pass').value.trim();
+            const newInitial = document.getElementById('new-admin-initial').value.trim().toUpperCase();
+
+            if (!newId || !newPass || !newInitial) return;
+
+            ADMIN_USERS[newId] = {
+                pass: newPass,
+                initial: newInitial,
+                isMaster: false
+            };
+
+            localStorage.setItem('saved_admin_users', JSON.stringify(ADMIN_USERS));
+
+            const toast = document.getElementById('master-toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => {
+                toast.classList.add('hidden');
+                document.getElementById('new-admin-id').value = '';
+                document.getElementById('new-admin-pass').value = '';
+                document.getElementById('new-admin-initial').value = '';
+            }, 3000);
+        }
+
+        function logoutAdmin() {
+            document.getElementById('admin-panel').classList.add('hidden');
+            document.getElementById('admin-auth').classList.remove('hidden');
+            document.getElementById('admin-id-input').value = '';
+            document.getElementById('admin-password').value = '';
+        }
+
+        function changeNumberStatus(targetStatus) {
+            const rawInput = document.getElementById('admin-target-num').value.trim();
+            if (!rawInput) return;
+
+            const targets = new Set();
+
+            if (rawInput.includes('-')) {
+                const parts = rawInput.split('-');
+                if (parts.length === 2) {
+                    const start = parseInt(parts[0], 10);
+                    const end = parseInt(parts[1], 10);
+
+                    if (!isNaN(start) && !isNaN(end) && start <= end) {
+                        for (let i = start; i <= end; i++) {
+                            if (i >= 0 && i < TOTAL_NUMBERS) targets.add(i);
+                        }
+                    }
+                }
+            } else if (rawInput.includes(',')) {
+                const parts = rawInput.split(',');
+                parts.forEach(part => {
+                    const num = parseInt(part.trim(), 10);
+                    if (!isNaN(num) && num >= 0 && num < TOTAL_NUMBERS) targets.add(num);
+                });
+            } else {
+                const num = parseInt(rawInput, 10);
+                if (!isNaN(num) && num >= 0 && num < TOTAL_NUMBERS) targets.add(num);
+            }
+
+            targets.forEach(numInt => {
+                window.saveTicketToFirebase(numInt, targetStatus, null, activeOperatorInitial);
+            });
+
+            document.getElementById('admin-target-num').value = '';
+            
+            const toast = document.getElementById('admin-toast');
+            toast.classList.remove('hidden');
+            setTimeout(() => toast.classList.add('hidden'), 3000);
+        }
+
+        function exportToExcel() {
+            const rows = [];
+            rows.push(["Número da Sorte", "Nome Completo", "CPF", "Telefone / WhatsApp", "Data de Reserva/Compra", "Status do Pagamento"]);
+
+            Object.keys(ticketsData).forEach(numStr => {
+                const ticket = ticketsData[numStr];
+                const formattedNum = String(numStr).padStart(4, '0');
+                
+                let buyerName = "-";
+                let buyerCpf = "-";
+                let buyerPhone = "-";
+
+                if (ticket.buyer) {
+                    buyerName = ticket.buyer.name || ticket.buyer.nome || ticket.name || "-";
+                    buyerCpf = ticket.buyer.cpf || ticket.buyer.CPF || "-";
+                    buyerPhone = ticket.buyer.phone || ticket.buyer.telefone || ticket.phone || "-";
+                } else if (ticket.name || ticket.telefone) {
+                    buyerName = ticket.name || "-";
+                    buyerPhone = ticket.telefone || ticket.phone || "-";
+                }
+
+                const date = ticket.updatedAt ? new Date(ticket.updatedAt).toLocaleString('pt-BR') : "-";
+                let status = "RESERVADO";
+                if (ticket.status === 'paid' || ticket.status === 'pago') {
+                    status = "PAGO";
+                }
+
+                rows.push([formattedNum, buyerName, buyerCpf, buyerPhone, date, status]);
+            });
+
+            const worksheet = XLSX.utils.aoa_to_sheet(rows);
+            const workbook = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(workbook, worksheet, "Compradores");
+            XLSX.writeFile(workbook, "Relatorio_Vakinha_Acampamento2027.xlsx");
+        }
+
+        function drawWinnerLive() {
+            const paidArray = Array.from(paidNumbers);
+            if (paidArray.length === 0) {
+                alert("Nenhum número pago para realizar o sorteio!");
+                return;
+            }
+
+            const winnerDisplay = document.getElementById('winner-display');
+            const winnerNumber = document.getElementById('winner-number');
+            const winnerDetails = document.getElementById('winner-details');
+            winnerDisplay.classList.remove('hidden');
+
+            let counter = 0;
+            const interval = setInterval(() => {
+                const randomTemp = paidArray[Math.floor(Math.random() * paidArray.length)];
+                winnerNumber.innerText = String(randomTemp).padStart(4, '0');
+                counter++;
+                if (counter > 25) {
+                    clearInterval(interval);
+                    const finalWinner = paidArray[Math.floor(Math.random() * paidArray.length)];
+                    const formattedWinner = String(finalWinner).padStart(4, '0');
+                    winnerNumber.innerText = formattedWinner;
+
+                    const ticketInfo = ticketsData[finalWinner];
+                    const winnerName = (ticketInfo && ticketInfo.buyer) ? ticketInfo.buyer.name : "Não informado";
+                    const winnerPhone = (ticketInfo && ticketInfo.buyer) ? ticketInfo.buyer.phone : "";
+                    winnerDetails.innerText = `Ganhador: ${winnerName} (${winnerPhone})`;
+                }
+            }, 80);
+        }
+    </script>
+</body>
+</html>
