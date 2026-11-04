@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const EfiPay = require('gn-api-sdk-node');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
-const serviceAccount = require('./firebase-key.json');
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
 const path = require('path');
 require('dotenv').config();
 
