@@ -105,4 +105,31 @@ app.post('/api/pix/webhook', async (req, res) => {
 
 // Definição da porta do Render
 const PORT = process.env.PORT || 3000;
+// Rota única para registrar o Webhook na Efí Pay automaticamente
+app.get('/api/pix/registrar-webhook', async (req, res) => {
+    const options = {
+        sandbox: false,
+        client_id: 'Client_Id_e86c98373d0df5d676379f5faf496ded71decb1a',
+        client_secret: 'Client_Secret_100f5fe98b5f037f05bc9366afc7be023ae69b59',
+        certificate: path.join(__dirname, 'certificado/producao-963471-Vakinha-da-Sorte.p12')
+    };
+
+    const efipay = new EfiPay(options);
+
+    const params = {
+        chave: 'e208d04b-f284-43bb-848a-1115c16ae4c3'
+    };
+
+    const body = {
+        webhookUrl: 'https://vakinha-da-sorte-rifa-do-patinete-el.onrender.com/api/pix/webhook'
+    };
+
+    try {
+        const resposta = await efipay.pixConfigWebhook(params, body);
+        res.json({ success: true, message: "Webhook registrado com sucesso na Efí!", resposta });
+    } catch (error) {
+        console.error("Erro ao registrar webhook:", error);
+        res.status(500).json({ success: false, error: error.message, details: error.data || error });
+    }
+});
 app.listen(PORT, () => console.log(`Servidor de liquidação Efí rodando na porta ${PORT}`));
