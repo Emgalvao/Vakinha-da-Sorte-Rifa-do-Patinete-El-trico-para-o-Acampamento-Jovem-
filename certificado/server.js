@@ -4,7 +4,7 @@ const bodyParser = require('body-parser');
 const EfiPay = require('gn-api-sdk-node');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
-const serviceAccount = require('./firebase-key.json');
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
 const path = require('path');
 require('dotenv').config();
 
@@ -20,12 +20,13 @@ app.use(bodyParser.json());
 
 // 1. Rota para Gerar o Pix Dinâmico na Efí
 app.post('/api/pix/create', async (req, res) => {
-    const { name, phone, numbers, amount } = req.body;
+    // Adicionado o 'cpf' na desestruturação dos dados recebidos do frontend
+    const { name, phone, cpf, numbers, amount } = req.body;
 
     const options = {
-        sandbox: false, // Alterar para true se estiver usando o ambiente de testes
-        client_id: 'Client_Id_prod_sua_chave_real_aqui',                   
-        client_secret: 'Client_Secret_prod_sua_chave_real_aqui',
+        sandbox: false,
+        client_id: 'Client_Id_e86c98373d0df5d676379f5faf496ded71decb1a',
+        client_secret: 'Client_Secret_100f5fe98b5f037f05bc9366afc7be023ae69b59',
         certificate: path.join(__dirname, 'certificado/producao-963471-Vakinha-da-Sorte.p12')
     };
 
@@ -36,7 +37,8 @@ app.post('/api/pix/create', async (req, res) => {
             expiracao: 600
         },
         devedor: {
-            nome: name
+            nome: name,
+            cpf: cpf ? cpf.replace(/\D/g, '') : '' // Formata o CPF removendo pontos e traços exigidos pela Efí
         },
         valor: {
             original: parseFloat(amount).toFixed(2)
@@ -51,7 +53,7 @@ app.post('/api/pix/create', async (req, res) => {
 
         await db.ref(`transactions/${pix.txid}`).set({
             numbers: numbers,
-            buyer: { name, phone },
+            buyer: { name, phone, cpf },
             amount: amount,
             status: 'PENDING',
             createdAt: new Date().toISOString()
@@ -95,5 +97,6 @@ app.post('/api/pix/webhook', async (req, res) => {
     res.status(200).send('OK');
 });
 
-const PORT = process.env.PORT || 3000;
+// O que você deve colocar:
+const API_URL = 'https://vakinha-da-sorte-rifa-do-patinete-el.onrender.com';
 app.listen(PORT, () => console.log(`Servidor de liquidação Efí rodando na porta ${PORT}`));

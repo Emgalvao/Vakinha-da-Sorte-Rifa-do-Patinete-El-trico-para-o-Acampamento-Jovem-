@@ -4,9 +4,11 @@ const bodyParser = require('body-parser');
 const EfiPay = require('gn-api-sdk-node');
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getDatabase } = require('firebase-admin/database');
-const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
 const path = require('path');
 require('dotenv').config();
+
+// Inicialização segura via variável de ambiente do Render
+const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG_JSON);
 
 initializeApp({
     credential: cert(serviceAccount),
@@ -20,7 +22,6 @@ app.use(bodyParser.json());
 
 // 1. Rota para Gerar o Pix Dinâmico na Efí
 app.post('/api/pix/create', async (req, res) => {
-    // Adicionado o 'cpf' na desestruturação dos dados recebidos do frontend
     const { name, phone, cpf, numbers, amount } = req.body;
 
     const options = {
@@ -38,7 +39,7 @@ app.post('/api/pix/create', async (req, res) => {
         },
         devedor: {
             nome: name,
-            cpf: cpf ? cpf.replace(/\D/g, '') : '' // Formata o CPF removendo pontos e traços exigidos pela Efí
+            cpf: cpf ? cpf.replace(/\D/g, '') : ''
         },
         valor: {
             original: parseFloat(amount).toFixed(2)
@@ -71,8 +72,13 @@ app.post('/api/pix/create', async (req, res) => {
     }
 });
 
-// 2. Webhook para receber a confirmação automática de pagamento da Efí
+// 2. Webhook com validação obrigatória da Efí Pay
 app.post('/api/pix/webhook', async (req, res) => {
+    // Resposta imediata para a validação inicial do Webhook enviada pela Efí
+    if (req.body && !req.body.pix) {
+        return res.status(200).send('OK');
+    }
+
     const pixEvents = req.body.pix;
 
     if (pixEvents) {
@@ -94,8 +100,9 @@ app.post('/api/pix/webhook', async (req, res) => {
             }
         }
     }
-    res.status(200).send('OK');
+    return res.status(200).send('OK');
 });
 
+// Definição da porta do Render
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor de liquidação Efí rodando na porta ${PORT}`));
